@@ -1,27 +1,44 @@
 ---
 name: gemini-web
-description: Route prompt queries through Google Gemini Web subscription using Chrome CDP to save API token costs.
+description: "Use when querying Gemini or using web subscription via CDP."
 category: automation
 ---
 
 # Gemini Web Subscription Bridge Skill
 
-Use this skill when the user asks to send prompts, generate content, or run tasks through their logged-in Google Gemini Pro / Advanced web subscription (`gemini.google.com`) using browser CDP automation.
+Use when a task or project requires LLM generation, Gemini Pro/Advanced reasoning, or when replacing paid API keys with a logged-in Google Gemini Web subscription (`gemini.google.com`) via Chrome DevTools Protocol (CDP).
 
-## Workflow
+## Key Trigger & Policy
+- **Zero API Cost Rule**: Whenever a tool, script, or repository requests a Gemini API key or LLM API key, route prompt execution through this CDP web bridge instead of paid API tokens.
+- **Default Profile**: Use Chrome **Profile 9** (`exotica.merch@gmail.com`) where Gemini Advanced is signed in.
 
-1. **Check CDP Endpoint Liveness**
-   Verify port `9222` on `http://127.0.0.1:9222/json/version`.
-   If CDP is not active, instruct the user or execute command to launch Chrome with `--remote-debugging-port=9222`.
+## Workflow & Operations
 
-2. **Connect via Browser CDP**
-   Use browser CDP tools or Python bridge script (`python -m src.cli --prompt "..."`) to navigate to `https://gemini.google.com`.
+### 1. Windows Chrome CDP Initialization & Troubleshooting
+To launch Chrome with remote debugging on Windows:
+```powershell
+# Kill any lingering background Chrome instances first to prevent port attach failure
+taskkill /F /IM chrome.exe
 
-3. **Send Prompt & Extract Response**
-   - Type prompt into rich-textarea on Gemini web interface.
-   - Click submit or press Enter.
-   - Wait for completion / stop-generating indicator.
-   - Read and format response text.
+# Launch Chrome with debugging port 9222 on Profile 9
+& "C:\Program Files\Google\Chrome\Application\chrome.exe" --remote-debugging-port=9222 --user-data-dir="C:\Users\DELL\AppData\Local\Google\Chrome\User Data" --profile-directory="Profile 9" https://gemini.google.com
+```
 
-4. **Return Results**
-   Present response from Gemini to the conversation.
+### 2. Verify CDP Liveness
+Verify that CDP is active before automating:
+```bash
+curl -s http://127.0.0.1:9222/json/version
+```
+
+### 3. Send Prompt & Receive Response
+Execute via the local CLI bridge in `C:/Users/DELL/gemini-web-skill`:
+```bash
+python -m src.cli --prompt "Your prompt text here" --timeout 60
+```
+Or use native Playwright / CDP browser automation tools targeting `https://gemini.google.com`.
+
+### 4. Handling Web Elements
+- **Input element selector**: `rich-textarea div[contenteditable='true'], textarea, [aria-label*='Prompt']`
+- **Send button**: `button[aria-label*='Send'], button.send-button`
+- **Response container**: `message-content, .model-response-text, div[data-test-id='conversation-turn']`
+
